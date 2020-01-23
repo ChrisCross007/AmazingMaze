@@ -5,23 +5,28 @@ import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
 import com.googlecode.lanterna.terminal.Terminal;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 public class Main {
+    static int x = 2;
+    static int y = 2;
     public static void main(String[] args) throws Exception {
         DefaultTerminalFactory terminalFactory = new DefaultTerminalFactory();
         Terminal terminal = terminalFactory.createTerminal();
         terminal.setCursorVisible(false);
 
-        int x = 2;
-        int y = 2;
+
         final char player = 'X';
         final char block = '\u2588';
         final char bomb = 'O';
         terminal.setCursorPosition(x, y);
         terminal.putCharacter(player);
+
+
+        // adding Bombs
+        Bombs bombs = new Bombs(20);
+        makeBombs(terminal, bomb, bombs);
+
 
         // Create obsticles array
         Position[] obsticles = new Position[100];
@@ -43,10 +48,7 @@ public class Main {
         // Use obsticles array to print to lanterna
         drawWalls(terminal, block, walls);
 
-        Random r = new Random();
-        Position bombPosition = new Position(r.nextInt(80), r.nextInt(24));
-        terminal.setCursorPosition(bombPosition.x, bombPosition.y);
-        terminal.putCharacter(bomb);
+
 
         terminal.flush();
 
@@ -54,6 +56,8 @@ public class Main {
         // Task 12
         boolean continueReadingInput = true;
         while (continueReadingInput) {
+
+
 
             KeyStroke keyStroke = null;
             do {
@@ -91,6 +95,7 @@ public class Main {
                     break;
             }
 
+
             // detect if player tries to run into obsticle
             boolean crashIntoObsticle = false;
 
@@ -118,14 +123,24 @@ public class Main {
             }
 
             // check if player runs into the bomb
-            if (bombPosition.x == x && bombPosition.y == y) {
-                terminal.close();
+            for(Bomb bomber: bombs.getBombs()) {
+                if (bomber.bombPosition.x == x && bomber.bombPosition.y == y) {
+                    terminal.close();
+                }
+
+
+                terminal.flush();
             }
-
-            terminal.flush();
-
         }
 
+    }
+
+    private static void makeBombs(Terminal terminal, char bomb, Bombs bombs) throws IOException, InterruptedException {
+        for (Bomb bomber : bombs.getBombs()) {
+            terminal.setCursorPosition(bomber.bombPosition.x, bomber.bombPosition.y);
+            terminal.putCharacter(bomb);
+
+        }
     }
 
     private static void drawWalls(Terminal terminal, char block,  Walls allWalls) throws IOException {
@@ -144,5 +159,13 @@ public class Main {
 
             }
         }
-   }
+    public static class Helper extends TimerTask
+    {
+        public static int timers = 0;
+        public void run()
+        {
+            System.out.println("Timer ran " + ++timers);
+        }
+    }
+}
 
