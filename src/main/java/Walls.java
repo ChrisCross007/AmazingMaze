@@ -5,11 +5,11 @@ public class Walls {
     private List<Wall> walls = new ArrayList<>();
 
     public Walls() {
+        // Initializing Walls
         addWall(new Wall(0,0, 51, true)); //side wall
         addWall(new Wall(0,0, 49, false)); //top wall
         addWall(new Wall(1,50, 49, false));//side wall
         addWall(new Wall(23 ,1, 47, true)); //top wall
-
         addWall(new Wall(1,8, 10, false));
         addWall(new Wall(1,15, 3, false));
         addWall(new Wall(1,30, 7, false));
@@ -44,11 +44,9 @@ public class Walls {
         addWall(new Wall(16,35, 6, false));
         addWall(new Wall(12,30, 3, true));
     }
-
     public void addWall (Wall wall){
         walls.add(wall);
     }
-
     public List<Wall> getWalls() {
         return walls;
     }

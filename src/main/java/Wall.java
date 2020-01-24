@@ -17,28 +17,21 @@ public class Wall {
     }
 
     public ArrayList<Position> addVerticleWall(int size){
-
         for(int i = 0;i<size;i++){
             wallArray.add(new Position(x, y +i));
-
         }
         return wallArray;
     }
     public ArrayList<Position> addHorizontalWall(int size){
-
         for(int i = 0;i<size;i++){
             wallArray.add(new Position(x +i, y));
-
         }
         return wallArray;
     }
-
     public List<Position> createWall() {
         if (this.horizontal)
             return addHorizontalWall(size);
         else
             return addVerticleWall(size);
     }
-
-
 }

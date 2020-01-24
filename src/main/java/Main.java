@@ -17,12 +17,11 @@ public class Main {
     static int x = 2;
     static int y = 2;
     static int moveCounter = 0;
-    static int numberOfBombs = 0;
+    static int numberOfAdditionalBombs = 0;
     static int scoreCounter = 500;
 
 
     public static void main(String[] args) throws Exception {
-
         //Creating terminal window
         DefaultTerminalFactory terminalFactory = new DefaultTerminalFactory();
         Terminal terminal = terminalFactory.createTerminal();
@@ -33,10 +32,6 @@ public class Main {
         logo.drawRectangle(new TerminalPosition(55,1), new TerminalSize(19,5), Symbols.DIAMOND);
         terminal.newTextGraphics().putCSIStyledString(58,3,"AMAZING MAZE!");
 
-        //tried to change colour
-        logo.setForegroundColor(TextColor.ANSI.RED);
-
-
         // defining player, walls and bombs
         final char player = '\u26C7';
         final char block = '\u2588';
@@ -44,16 +39,26 @@ public class Main {
         terminal.setCursorPosition(x, y);
         terminal.putCharacter(player);
 
+        // Drawing Maze with random bombs and static walls
         Bombs bombs = new Bombs(20);
         makeBombs(terminal, bomb, bombs);
         Walls wallsInitial = new Walls();
         drawWalls(terminal, block, wallsInitial);
-
         terminal.flush();
 
+        // While loop to keep the game running
+        gameEngine(terminal, tGraphics, player, block, bomb, bombs);
+    }
 
+
+    // METHOD CALLS IN MAIN
+    // While loop to keep the game running
+    private static void gameEngine(Terminal terminal, TextGraphics tGraphics, char player, char block, char bomb, Bombs bombs) throws IOException, InterruptedException {
         boolean continueReadingInput = true;
+        // GAME LOOP
         while (continueReadingInput) {
+
+            // Keep drawing the walls to avoid bombs inside walls
             Walls walls = new Walls();
             drawWalls(terminal, block, walls);
 
@@ -64,89 +69,99 @@ public class Main {
                 keyStroke = terminal.pollInput();
             } while (keyStroke == null);
 
-
             KeyType type = keyStroke.getKeyType();
             Character c = keyStroke.getCharacter(); // used Character instead of char because it might be null
 
-            System.out.println("keyStroke.getKeyType(): " + type
-                    + " keyStroke.getCharacter(): " + c);
-
-            if (c == Character.valueOf('q') || c == Character.valueOf('Q')) {
-                continueReadingInput = false;
-                System.out.println("Quitting.....");
-                terminal.newTextGraphics().putCSIStyledString(58,10,"You coward, are you quitting on me?!");
-
-                System.out.println("Quitting.....");
-
-                Thread.sleep(1000);
-                terminal.close();
-                System.out.println("quit");
-            }
+            // Press q or Q to exit the game
+            continueReadingInput = exitGame(terminal, continueReadingInput, c);
 
             int oldX = x; // save old position x
             int oldY = y; // save old position y
-            switch (keyStroke.getKeyType()) {
-                case ArrowDown:
-                    y += 1;
-                    moveCounter++;
-                    scoreCounter --;
-                    break;
-                case ArrowUp:
-                    y -= 1;
-                    moveCounter++;
-                    scoreCounter --;
-                    break;
-                case ArrowRight:
-                    x += 1;
-                    moveCounter++;
-                    scoreCounter --;
-                    break;
-                case ArrowLeft:
-                    x -= 1;
-                    moveCounter++;
-                    scoreCounter --;
-                    break;
-            }
+            navigatingPlayer(keyStroke);
 
-
-            // detect if player tries to run into obsticle
+            // detect if player tries to run into wall
             playerCrashing(terminal, player, walls, oldX, oldY);
 
             // check if player runs into the bomb
             catchBomb(terminal, bombs, (AbstractTextGraphics) tGraphics);
 
-            boolean isWinning = (x == 48 && y == 23) ||( x == 49 && y == 23);
+            winningGame(terminal, tGraphics);
 
-            if (isWinning){
-                System.out.println("YOU WON!");
-                terminal.clearScreen();
-                tGraphics.clearModifiers();
-                tGraphics.drawRectangle(new TerminalPosition(23,8), new TerminalSize(40,8), Symbols.DIAMOND);
-                terminal.newTextGraphics().putCSIStyledString(30,11,"CONGRATULATIONS, YOU WON!");
-                String s = "your score is: "+ scoreCounter;
-                terminal.newTextGraphics().putString(33,13,s);
+            bombs = addingMoreBombs(terminal, block, bomb, bombs, walls);
+            terminal.flush();
             }
+    }
 
-            if(moveCounter == 10){
+    private static boolean exitGame(Terminal terminal, boolean continueReadingInput, Character c) throws InterruptedException, IOException {
+        // A menu will be inserted in the next version of the game
 
-                numberOfBombs += 7;
-                removeBombs(terminal, bombs);
-                bombs.removeBombs();
-                bombs = new Bombs(20+ numberOfBombs);
-
-                makeBombs(terminal, bomb, bombs);
-                drawWalls(terminal, block, walls);
-                moveCounter = 0;
-
-            }
-                terminal.flush();
-            }
+        if (c == Character.valueOf('q') || c == Character.valueOf('Q')) {
+            continueReadingInput = false;
+            System.out.println("Quitting.....");
+            Thread.sleep(1000);
+            terminal.close();
+            System.out.println("Quit");
         }
+        return continueReadingInput;
+    }
+
+    private static Bombs addingMoreBombs(Terminal terminal, char block, char bomb, Bombs bombs, Walls walls) throws IOException, InterruptedException {
+        if(moveCounter == 10){
+
+            numberOfAdditionalBombs += 7;
+            removeBombs(terminal, bombs);
+            bombs.removeBombs();
+            bombs = new Bombs(20+ numberOfAdditionalBombs);
+
+            makeBombs(terminal, bomb, bombs);
+            drawWalls(terminal, block, walls);
+            moveCounter = 0;
+
+        }
+        return bombs;
+    }
+
+    private static void winningGame(Terminal terminal, TextGraphics tGraphics) throws IOException {
+        boolean isWinning = (x == 48 && y == 23) ||( x == 49 && y == 23);
+
+        if (isWinning){
+            System.out.println("YOU WON!");
+            terminal.clearScreen();
+            tGraphics.clearModifiers();
+            tGraphics.drawRectangle(new TerminalPosition(23,8), new TerminalSize(40,8), Symbols.DIAMOND);
+            terminal.newTextGraphics().putCSIStyledString(30,11,"CONGRATULATIONS, YOU WON!");
+            String s = "your score is: "+ scoreCounter;
+            terminal.newTextGraphics().putString(33,13,s);
+        }
+    }
+
+    private static void navigatingPlayer(KeyStroke keyStroke) {
+        switch (keyStroke.getKeyType()) {
+            case ArrowDown:
+                y += 1;
+                moveCounter++;
+                scoreCounter --;
+                break;
+            case ArrowUp:
+                y -= 1;
+                moveCounter++;
+                scoreCounter --;
+                break;
+            case ArrowRight:
+                x += 1;
+                moveCounter++;
+                scoreCounter --;
+                break;
+            case ArrowLeft:
+                x -= 1;
+                moveCounter++;
+                scoreCounter --;
+                break;
+        }
+    }
 
     private static void playerCrashing(Terminal terminal, char player, Walls walls, int oldX, int oldY) throws IOException {
         boolean crashIntoObsticle = isCrashingIntoAWall(walls);
-
-
         if (crashIntoObsticle) {
             x = oldX;
             y = oldY;
@@ -191,7 +206,6 @@ public class Main {
         }
     }
 
-
     private static void makeBombs(Terminal terminal, char bomb, Bombs bombs) throws IOException, InterruptedException {
             for (Bomb bomber : bombs.getBombs()) {
                 terminal.setCursorPosition(bomber.bombPosition.x, bomber.bombPosition.y);
@@ -200,6 +214,7 @@ public class Main {
         System.out.println("Bombs made");
 
     }
+
     private static void removeBombs(Terminal terminal, Bombs bombs) throws IOException, InterruptedException {
         for (Bomb bomber : bombs.getBombs()) {
             terminal.setCursorPosition(bomber.bombPosition.x, bomber.bombPosition.y);
@@ -223,6 +238,5 @@ public class Main {
             terminal.putCharacter(block);
             }
         }
-
 }
 
