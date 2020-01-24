@@ -22,6 +22,13 @@ public class Bombs {
     public List<Bomb> getBombs(){
         return bombs;
     }
+    public void removeBombs(){
+
+        bombs.clear();
+    }
+    public boolean isempty(){
+        return bombs.isEmpty();
+    }
 
 
 }

@@ -10,53 +10,35 @@ import java.util.*;
 public class Main {
     static int x = 2;
     static int y = 2;
+    static int moveCounter = 0;
+    static int numberOfBombs = 0;
+
+
     public static void main(String[] args) throws Exception {
         DefaultTerminalFactory terminalFactory = new DefaultTerminalFactory();
         Terminal terminal = terminalFactory.createTerminal();
         terminal.setCursorVisible(false);
 
 
-        final char player = 'X';
+
+        final char player = '\u1F93';
         final char block = '\u2588';
-        final char bomb = 'O';
+        final char bomb = '\u26D4';
         terminal.setCursorPosition(x, y);
         terminal.putCharacter(player);
 
-
-        // adding Bombs
         Bombs bombs = new Bombs(20);
         makeBombs(terminal, bomb, bombs);
-
-
-        // Create obsticles array
-        Position[] obsticles = new Position[100];
-        for(int i = 0;i<100;i++){
-            obsticles[i] = new Position(0, 0+i);
-        }
-        // Create obsticles array
-        Walls walls = new Walls();
-        walls.addWall(new Wall(1,1, 79, true));
-        walls.addWall(new Wall(1,1, 49, false));
-        walls.addWall(new Wall(1,79, 49, false));
-        walls.addWall(new Wall(23 ,1, 76, true));
-        walls.addWall(new Wall(20,20, 10, true));
-        walls.addWall(new Wall(12,4, 15, false));
-        walls.addWall(new Wall(1,4, 9, false));
-        walls.addWall(new Wall(9,4, 9, true));
-        walls.addWall(new Wall(1,13, 7, false));
-
-        // Use obsticles array to print to lanterna
-        drawWalls(terminal, block, walls);
-
-
+        Walls wallsInitial = new Walls();
+        drawWalls(terminal, block, wallsInitial);
 
         terminal.flush();
 
 
-        // Task 12
         boolean continueReadingInput = true;
         while (continueReadingInput) {
-
+            Walls walls = new Walls();
+            drawWalls(terminal, block, walls);
 
 
             KeyStroke keyStroke = null;
@@ -69,8 +51,6 @@ public class Main {
             KeyType type = keyStroke.getKeyType();
             Character c = keyStroke.getCharacter(); // used Character instead of char because it might be null
 
-            System.out.println("keyStroke.getKeyType(): " + type
-                    + " keyStroke.getCharacter(): " + c);
 
             if (c == Character.valueOf('q')) {
                 continueReadingInput = false;
@@ -83,32 +63,25 @@ public class Main {
             switch (keyStroke.getKeyType()) {
                 case ArrowDown:
                     y += 1;
+                    moveCounter++;
                     break;
                 case ArrowUp:
                     y -= 1;
+                    moveCounter++;
                     break;
                 case ArrowRight:
                     x += 1;
+                    moveCounter++;
                     break;
                 case ArrowLeft:
                     x -= 1;
+                    moveCounter++;
                     break;
             }
 
 
             // detect if player tries to run into obsticle
-            boolean crashIntoObsticle = false;
-
-            List<Wall> walls1 = walls.getWalls();
-            for (Wall w : walls1) {
-                List<Position> wall = w.createWall();
-                for (Position p : wall) {
-                    if (p.x == x && p.y == y) {
-                        crashIntoObsticle = true;
-                        break;
-                    }
-                }
-            }
+            boolean crashIntoObsticle = isCrashingIntoAWall(walls);
 
 
             if (crashIntoObsticle) {
@@ -123,24 +96,68 @@ public class Main {
             }
 
             // check if player runs into the bomb
-            for(Bomb bomber: bombs.getBombs()) {
-                if (bomber.bombPosition.x == x && bomber.bombPosition.y == y) {
-                    terminal.close();
-                }
+            catchBomb(terminal, bombs);
 
 
+            if(moveCounter == 10){
+
+                numberOfBombs += 7;
+                removeBombs(terminal, bombs);
+                bombs.removeBombs();
+                bombs = new Bombs(20+ numberOfBombs);
+
+                makeBombs(terminal, bomb, bombs);
+                drawWalls(terminal, block, walls);
+                moveCounter = 0;
+
+            }
                 terminal.flush();
             }
         }
 
+    private static boolean isCrashingIntoAWall(Walls walls) {
+        boolean crashIntoObsticle = false;
+
+        List<Wall> walls1 = walls.getWalls();
+        for (Wall w : walls1) {
+            List<Position> wall = w.createWall();
+            for (Position p : wall) {
+                if (p.x == x && p.y == y) {
+                    crashIntoObsticle = true;
+                    break;
+                }
+            }
+        }
+        return crashIntoObsticle;
     }
 
+    private static void catchBomb(Terminal terminal, Bombs bombs) throws IOException, InterruptedException {
+        for (Bomb bomber : bombs.getBombs()) {
+            if (bomber.bombPosition.x == x && bomber.bombPosition.y == y) {
+                terminal.bell();
+                Thread.sleep(100);
+                terminal.close();
+                System.exit(0);
+            }
+        }
+    }
+
+
     private static void makeBombs(Terminal terminal, char bomb, Bombs bombs) throws IOException, InterruptedException {
+            for (Bomb bomber : bombs.getBombs()) {
+                terminal.setCursorPosition(bomber.bombPosition.x, bomber.bombPosition.y);
+                terminal.putCharacter(bomb);
+            }
+        System.out.println("Bombs made");
+
+    }
+    private static void removeBombs(Terminal terminal, Bombs bombs) throws IOException, InterruptedException {
         for (Bomb bomber : bombs.getBombs()) {
             terminal.setCursorPosition(bomber.bombPosition.x, bomber.bombPosition.y);
-            terminal.putCharacter(bomb);
-
+            terminal.putCharacter(' ');
         }
+        System.out.println("Bombs removed");
+
     }
 
     private static void drawWalls(Terminal terminal, char block,  Walls allWalls) throws IOException {
@@ -155,17 +172,8 @@ public class Main {
         for (Position position : positions) {
             terminal.setCursorPosition(position.x, position.y);
             terminal.putCharacter(block);
-
-
             }
         }
-    public static class Helper extends TimerTask
-    {
-        public static int timers = 0;
-        public void run()
-        {
-            System.out.println("Timer ran " + ++timers);
-        }
-    }
+
 }
 
