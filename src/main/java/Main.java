@@ -30,13 +30,19 @@ public class Main {
         boolean continuePlaying = true;
 
         while (continuePlaying) {
+            x = 2;
+            y = 2;
+            numberOfAdditionalBombs = 0;
+            steps = 0;
+            moveCounter = 1;
+            scoreCounter = 500;
             DefaultTerminalFactory terminalFactory = new DefaultTerminalFactory();
             Terminal terminal = terminalFactory.createTerminal();
             TextGraphics tGraphics = createTerminal(terminal);
 
 
             // defining player, walls and bombs
-            final char player = '\u26C7';
+            final char player = '\u2605';
             final char block = '\u2588';
             final char bomb = '\u2623';
             terminal.setCursorPosition(x, y);
@@ -105,9 +111,10 @@ public class Main {
             playerCrashing(terminal, player, walls, oldX, oldY);
 
             // check if player runs into the bomb
-            catchBomb(terminal, bombs, (AbstractTextGraphics) tGraphics);
+
 
             continueReadingInput = winningGame(terminal, tGraphics);
+            continueReadingInput = catchBomb(terminal, bombs, (AbstractTextGraphics) tGraphics, continueReadingInput);
 
             bombs = addingMoreBombs(terminal, block, bomb, bombs, walls);
             terminal.flush();
@@ -132,7 +139,7 @@ public class Main {
             if(steps == moveCounter) {
                 moveCounter = ThreadLocalRandom.current().nextInt(1, 15 + 1);
                 System.out.println("MOVE COUNTER" + moveCounter);
-                numberOfAdditionalBombs = ThreadLocalRandom.current().nextInt(10, 150 + 1);
+                numberOfAdditionalBombs = ThreadLocalRandom.current().nextInt(10, 10 + 1);
                 System.out.println("Numberofbombs = " + numberOfAdditionalBombs);
                 removeBombs(terminal, bombs);
                 bombs.removeBombs();
@@ -153,12 +160,16 @@ public class Main {
         if (isWinning){
 
             System.out.println("YOU WON!");
+            terminal.bell();
             terminal.clearScreen();
             tGraphics.clearModifiers();
             tGraphics.drawRectangle(new TerminalPosition(23,8), new TerminalSize(40,8), Symbols.DIAMOND);
             terminal.newTextGraphics().putCSIStyledString(30,11,"CONGRATULATIONS, YOU WON!");
             String s = "your score is: "+ scoreCounter;
             terminal.newTextGraphics().putString(33,13,s);
+            Thread.sleep(5000);
+            terminal.clearScreen();
+
             return false;
 
         }
@@ -220,7 +231,10 @@ public class Main {
         return crashIntoObsticle;
     }
 
-    private static void catchBomb(Terminal terminal, Bombs bombs, AbstractTextGraphics tGraphics) throws IOException, InterruptedException {
+    private static boolean catchBomb(Terminal terminal, Bombs bombs, AbstractTextGraphics tGraphics, boolean continueReadingInput) throws IOException, InterruptedException {
+        if(!continueReadingInput){
+            return false;
+        }
         for (Bomb bomber : bombs.getBombs()) {
             if (bomber.bombPosition.x == x && bomber.bombPosition.y == y) {
                 terminal.bell();
@@ -230,10 +244,16 @@ public class Main {
                 tGraphics.drawRectangle(new TerminalPosition(20,8), new TerminalSize(40,8), Symbols.DIAMOND);
                 terminal.newTextGraphics().putCSIStyledString(35,12,"GAME OVER!");
                 Thread.sleep(5000);
-                terminal.close();
-                System.exit(0);
+                //terminal.close();
+                //System.exit(0);
+                terminal.clearScreen();
+                return false;
             }
+
+
+
         }
+        return true;
     }
 
     private static void makeBombs(Terminal terminal, char bomb, Bombs bombs) throws IOException, InterruptedException {
