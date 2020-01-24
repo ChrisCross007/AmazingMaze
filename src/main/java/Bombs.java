@@ -26,9 +26,7 @@ public class Bombs {
 
         bombs.clear();
     }
-    public boolean isempty(){
-        return bombs.isEmpty();
-    }
+
 
 
 }

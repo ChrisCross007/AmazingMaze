@@ -2,8 +2,7 @@ import java.util.Random;
 
 public class Bomb {
     Position bombPosition;
-    int bombX;
-    int bombY;
+
 
     public Bomb() {
         Random r = new Random();

@@ -1,4 +1,10 @@
 
+import com.googlecode.lanterna.Symbols;
+import com.googlecode.lanterna.TerminalPosition;
+import com.googlecode.lanterna.TerminalSize;
+import com.googlecode.lanterna.TextColor;
+import com.googlecode.lanterna.graphics.AbstractTextGraphics;
+import com.googlecode.lanterna.graphics.TextGraphics;
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.input.KeyType;
 import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
@@ -12,18 +18,29 @@ public class Main {
     static int y = 2;
     static int moveCounter = 0;
     static int numberOfBombs = 0;
+    static int scoreCounter = 500;
 
 
     public static void main(String[] args) throws Exception {
+
+        //Creating terminal window
         DefaultTerminalFactory terminalFactory = new DefaultTerminalFactory();
         Terminal terminal = terminalFactory.createTerminal();
+        terminal.setForegroundColor(TextColor.ANSI.GREEN);
         terminal.setCursorVisible(false);
+        TextGraphics tGraphics = terminal.newTextGraphics();
+        TextGraphics logo = terminal.newTextGraphics();
+        logo.drawRectangle(new TerminalPosition(55,1), new TerminalSize(19,5), Symbols.DIAMOND);
+        terminal.newTextGraphics().putCSIStyledString(58,3,"AMAZING MAZE!");
+
+        //tried to change colour
+        logo.setForegroundColor(TextColor.ANSI.RED);
 
 
-
-        final char player = '\u1F93';
+        // defining player, walls and bombs
+        final char player = '\u26C7';
         final char block = '\u2588';
-        final char bomb = '\u26D4';
+        final char bomb = '\u2623';
         terminal.setCursorPosition(x, y);
         terminal.putCharacter(player);
 
@@ -51,9 +68,17 @@ public class Main {
             KeyType type = keyStroke.getKeyType();
             Character c = keyStroke.getCharacter(); // used Character instead of char because it might be null
 
+            System.out.println("keyStroke.getKeyType(): " + type
+                    + " keyStroke.getCharacter(): " + c);
 
-            if (c == Character.valueOf('q')) {
+            if (c == Character.valueOf('q') || c == Character.valueOf('Q')) {
                 continueReadingInput = false;
+                System.out.println("Quitting.....");
+                terminal.newTextGraphics().putCSIStyledString(58,10,"You coward, are you quitting on me?!");
+
+                System.out.println("Quitting.....");
+
+                Thread.sleep(1000);
                 terminal.close();
                 System.out.println("quit");
             }
@@ -64,40 +89,43 @@ public class Main {
                 case ArrowDown:
                     y += 1;
                     moveCounter++;
+                    scoreCounter --;
                     break;
                 case ArrowUp:
                     y -= 1;
                     moveCounter++;
+                    scoreCounter --;
                     break;
                 case ArrowRight:
                     x += 1;
                     moveCounter++;
+                    scoreCounter --;
                     break;
                 case ArrowLeft:
                     x -= 1;
                     moveCounter++;
+                    scoreCounter --;
                     break;
             }
 
 
             // detect if player tries to run into obsticle
-            boolean crashIntoObsticle = isCrashingIntoAWall(walls);
-
-
-            if (crashIntoObsticle) {
-                x = oldX;
-                y = oldY;
-            }
-            else {
-                terminal.setCursorPosition(oldX, oldY); // move cursor to old position
-                terminal.putCharacter(' '); // clean up by printing space on old position
-                terminal.setCursorPosition(x, y);
-                terminal.putCharacter(player);
-            }
+            playerCrashing(terminal, player, walls, oldX, oldY);
 
             // check if player runs into the bomb
-            catchBomb(terminal, bombs);
+            catchBomb(terminal, bombs, (AbstractTextGraphics) tGraphics);
 
+            boolean isWinning = (x == 48 && y == 23) ||( x == 49 && y == 23);
+
+            if (isWinning){
+                System.out.println("YOU WON!");
+                terminal.clearScreen();
+                tGraphics.clearModifiers();
+                tGraphics.drawRectangle(new TerminalPosition(23,8), new TerminalSize(40,8), Symbols.DIAMOND);
+                terminal.newTextGraphics().putCSIStyledString(30,11,"CONGRATULATIONS, YOU WON!");
+                String s = "your score is: "+ scoreCounter;
+                terminal.newTextGraphics().putString(33,13,s);
+            }
 
             if(moveCounter == 10){
 
@@ -115,6 +143,22 @@ public class Main {
             }
         }
 
+    private static void playerCrashing(Terminal terminal, char player, Walls walls, int oldX, int oldY) throws IOException {
+        boolean crashIntoObsticle = isCrashingIntoAWall(walls);
+
+
+        if (crashIntoObsticle) {
+            x = oldX;
+            y = oldY;
+        }
+        else {
+            terminal.setCursorPosition(oldX, oldY); // move cursor to old position
+            terminal.putCharacter(' '); // clean up by printing space on old position
+            terminal.setCursorPosition(x, y);
+            terminal.putCharacter(player);
+        }
+    }
+
     private static boolean isCrashingIntoAWall(Walls walls) {
         boolean crashIntoObsticle = false;
 
@@ -131,11 +175,16 @@ public class Main {
         return crashIntoObsticle;
     }
 
-    private static void catchBomb(Terminal terminal, Bombs bombs) throws IOException, InterruptedException {
+    private static void catchBomb(Terminal terminal, Bombs bombs, AbstractTextGraphics tGraphics) throws IOException, InterruptedException {
         for (Bomb bomber : bombs.getBombs()) {
             if (bomber.bombPosition.x == x && bomber.bombPosition.y == y) {
                 terminal.bell();
-                Thread.sleep(100);
+                System.out.println("GAME OVER!");
+                terminal.clearScreen();
+                tGraphics.clearModifiers();
+                tGraphics.drawRectangle(new TerminalPosition(20,8), new TerminalSize(40,8), Symbols.DIAMOND);
+                terminal.newTextGraphics().putCSIStyledString(35,12,"GAME OVER!");
+                Thread.sleep(5000);
                 terminal.close();
                 System.exit(0);
             }
