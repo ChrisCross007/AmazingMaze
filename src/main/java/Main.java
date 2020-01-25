@@ -42,11 +42,11 @@ public class Main {
 
 
             // defining player, walls and bombs
-            final char player = '\u2605';
             final char block = '\u2588';
             final char bomb = '\u2623';
-            terminal.setCursorPosition(x, y);
-            terminal.putCharacter(player);
+            Player player1 = new Player(x,y);
+            terminal.setCursorPosition(player1.position.x, player1.position.y);
+            terminal.putCharacter(player1.player);
 
             // Drawing Maze with random bombs and static walls
             Bombs bombs = new Bombs(20);
@@ -56,7 +56,7 @@ public class Main {
             terminal.flush();
 
             // While loop to keep the game running
-            gameEngine(terminal, tGraphics, player, block, bomb, bombs);
+            gameEngine(terminal, tGraphics, player1.player, block, bomb, bombs);
         }
     }
 
